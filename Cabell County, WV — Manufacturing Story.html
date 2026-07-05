@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Cabell County, WV — Manufacturing Story</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;background:#fff;font-family:Arial,Helvetica,sans-serif;color:#414042;overflow:hidden}
+
+.scene{position:absolute;inset:0;bottom:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 40px 10px;opacity:0;pointer-events:none;transition:opacity 0.55s ease;background:#fff;overflow:hidden}
+.scene.active{opacity:1;pointer-events:all}
+
+.tag{font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#1896ae;margin-bottom:4px;text-align:center;flex-shrink:0}
+.stitle{font-family:Georgia,'Palatino Linotype',serif;font-size:26px;font-weight:700;text-align:center;line-height:1.25;margin-bottom:4px;color:#1a3d5c;flex-shrink:0}
+.ssub{font-family:Georgia,serif;font-size:13px;color:#607080;text-align:center;margin-bottom:13px;flex-shrink:0}
+.cite{position:absolute;bottom:6px;left:0;right:0;font-size:9px;color:#a8b8c0;text-align:center;font-style:italic;pointer-events:none}
+
+/* NAV */
+.nav{position:fixed;bottom:0;left:0;right:0;height:56px;display:flex;align-items:center;justify-content:center;gap:14px;background:rgba(255,255,255,0.97);border-top:1.5px solid #d8e8ea;z-index:400;transition:background 0.4s,border-color 0.4s}
+.nav-btn{background:rgba(0,110,130,0.07);border:1px solid rgba(0,110,130,0.38);color:#006e82;padding:7px 22px;border-radius:4px;cursor:pointer;font-size:13px;font-family:inherit;transition:all 0.2s}
+.nav-btn:hover:not(:disabled){background:rgba(0,110,130,0.14)}
+.nav-btn:disabled{opacity:0.25;cursor:default}
+.dots{display:flex;gap:7px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:rgba(0,110,130,0.2);cursor:pointer;transition:all 0.3s}
+.dot.active{background:#006e82;width:22px;border-radius:3px}
+.scnt{font-size:11px;color:#90a8b8;min-width:40px;text-align:center}
+body.dark-nav .nav{background:rgba(13,27,42,0.97);border-top-color:rgba(24,150,174,0.2)}
+body.dark-nav .nav-btn{border-color:rgba(24,150,174,0.4);color:#80d0d8;background:rgba(24,150,174,0.08)}
+body.dark-nav .nav-btn:hover:not(:disabled){background:rgba(24,150,174,0.18)}
+body.dark-nav .dot{background:rgba(24,150,174,0.25)}
+body.dark-nav .dot.active{background:#1896ae;width:22px}
+body.dark-nav .scnt{color:rgba(130,210,220,0.6)}
+
+/* S1: MAP */
+#leaflet-map{width:100%;max-width:700px;height:340px;border-radius:12px;overflow:hidden;box-shadow:0 6px 28px rgba(0,0,0,0.10);border:1px solid #d8e8ec;flex-shrink:0}
+.map-leg-row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:10px;font-size:10.5px;color:#607080;flex-shrink:0}
+.ml-i{display:flex;align-items:center;gap:5px}
+.ml-sw{width:11px;height:11px;border-radius:2px;border:1px solid rgba(0,0,0,0.12)}
+.ml-dt{width:8px;height:8px;border-radius:50%}
+
+/* S2: STATS + COUNTY OUTLINE */
+.s2-layout{display:flex;align-items:center;gap:28px;width:100%;max-width:830px}
+.s2-map-col{flex-shrink:0;width:230px;display:flex;flex-direction:column;align-items:center;gap:6px}
+#county-outline-map{width:230px;height:225px;border-radius:10px;overflow:hidden;border:1.5px solid #ccdee8;box-shadow:0 3px 14px rgba(0,0,0,0.09)}
+.s2-county-lbl{font-size:11.5px;font-weight:700;color:#006e82;text-align:center}
+.s2-county-sub{font-size:9.5px;color:#9aacb4;text-align:center}
+.s2-stats-col{flex:1}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%}
+.stat-card{background:#f4f9fa;border-radius:10px;padding:18px 16px;border-left:4px solid #1896ae}
+.stat-card.hi{border-left-color:#77c043}
+.stat-lbl{font-size:10.5px;text-transform:uppercase;color:#9aacb2;letter-spacing:0.06em;margin-bottom:6px}
+.stat-val{font-size:38px;font-weight:700;color:#006e82;line-height:1}
+.stat-sub{font-size:11px;color:#b8c8cc;margin-top:4px}
+
+/* S3: COMBINED CHART */
+.chart-inner{width:100%;max-width:660px;display:flex;flex-direction:column}
+.chart-box{height:300px;position:relative}
+.chart-note{font-size:9.5px;color:#b8c8cc;text-align:right;margin-top:4px}
+.combo-leg{display:flex;gap:18px;justify-content:center;margin-top:5px;font-size:10.5px;color:#607080;flex-shrink:0}
+.combo-leg-i{display:flex;align-items:center;gap:5px}
+.combo-leg-sw{width:10px;height:10px;border-radius:2px}
+
+/* S4: LQ RANKINGS */
+.lq-inner{width:100%;max-width:660px;display:flex;flex-direction:column}
+.tog-row{display:flex;gap:8px;margin-bottom:8px;justify-content:center}
+.btn-tog{background:#ebebeb;border:none;border-radius:5px;padding:6px 16px;font-size:12px;font-weight:700;color:#666;cursor:pointer;transition:all 0.15s;font-family:inherit}
+.btn-tog.on{background:#1896ae;color:#fff}
+.lq-ref{font-size:10px;color:#9aacb2;margin-bottom:6px;text-align:center}
+.lq-list{overflow-y:auto;display:flex;flex-direction:column;gap:4px;max-height:320px;padding-right:4px}
+.lq-list::-webkit-scrollbar{width:3px}
+.lq-list::-webkit-scrollbar-thumb{background:#d0dce2;border-radius:2px}
+.top3-box{border:2px solid #77c043;border-radius:9px;padding:8px 10px 6px;background:rgba(119,192,67,0.05);margin-bottom:6px;display:flex;flex-direction:column;gap:4px}
+.top3-lbl{font-size:8.5px;font-weight:700;color:#3d8c18;text-transform:uppercase;letter-spacing:0.09em;text-align:center;margin-bottom:2px}
+.lq-row{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.lq-name{font-size:12.5px;width:218px;flex-shrink:0;color:#414042;text-align:right;line-height:1.3}
+.lq-track{flex:1;height:22px;background:#f0f0f0;border-radius:4px;overflow:hidden}
+.lq-fill{height:100%;border-radius:4px;transition:width 0.45s ease}
+.lq-fill.above{background:#006e82}
+.lq-fill.below{background:#a8d5dc}
+.lq-num{font-size:12.5px;width:44px;font-weight:700;color:#555}
+
+/* S5: DARK SUPPLY CHAIN (moved here) */
+#s5{background:#0d1b2a;padding:16px 32px 8px}
+.net8-inner{width:100%;max-width:940px;flex:1;min-height:0;max-height:min(68vh,620px);position:relative}
+#net8-svg{width:100%;height:100%}
+
+/* S5: ANIMATED SUPPLY CHAIN */
+.n5hdr,.n5up,.n5hub,.n5dn{opacity:0}
+.n5pu,.n5pd{stroke-dasharray:560;stroke-dashoffset:560}
+@keyframes n5fi{from{opacity:0}to{opacity:1}}
+@keyframes n5dr{from{stroke-dashoffset:560}to{stroke-dashoffset:0}}
+#s5.active .n5hdr{animation:n5fi .5s ease .1s forwards}
+#s5.active .n5up{animation:n5fi .5s ease forwards}
+#s5.active .n5pu{animation:n5dr 1.1s cubic-bezier(.45,0,.55,1) forwards}
+#s5.active .n5hub{animation:n5fi .7s cubic-bezier(.34,1.4,.64,1) forwards}
+#s5.active .n5pd{animation:n5dr 1.1s cubic-bezier(.45,0,.55,1) forwards}
+#s5.active .n5dn{animation:n5fi .5s ease forwards}
+
+/* S6: EMPLOYMENT CHANGE */
+.chg-inner{width:100%;max-width:680px;display:flex;flex-direction:column}
+.chg-filt{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;justify-content:center}
+.btn-chg{background:#ebebeb;border:none;border-radius:5px;padding:6px 13px;font-size:12px;font-weight:700;color:#666;cursor:pointer;transition:all 0.15s;font-family:inherit}
+.btn-chg.on{color:#fff}
+.btn-chg.on.all{background:#1896ae}
+.btn-chg.on.grow{background:#77c043}
+.btn-chg.on.decline{background:#006e82}
+.chg-scroll{overflow-y:auto;max-height:290px}
+.chg-scroll::-webkit-scrollbar{width:3px}
+.chg-scroll::-webkit-scrollbar-thumb{background:#d0dce2;border-radius:2px}
+.chg-shdr{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.05em;padding:7px 0 3px;border-top:1px solid #eee;margin-top:3px}
+.chg-shdr:first-child{border-top:none;margin-top:0}
+.chg-row{display:flex;align-items:center;gap:7px;padding:3px 4px;cursor:pointer;border-radius:4px;transition:background 0.12s}
+.chg-row:hover{background:#f4f4f4}
+.chg-row.selected{background:#eef8f9}
+.chg-rname{font-size:12px;width:190px;flex-shrink:0;color:#414042;line-height:1.3;text-align:right}
+.chg-track{flex:1;height:15px;display:flex;align-items:center}
+.chg-neg-side{flex:1;display:flex;justify-content:flex-end;height:15px}
+.chg-pos-side{flex:1;height:15px}
+.chg-neg{height:100%;background:#006e82;border-radius:3px 0 0 3px;min-width:0}
+.chg-pos{height:100%;background:#77c043;border-radius:0 3px 3px 0;min-width:0}
+.chg-ctr{width:1px;height:20px;background:#ccc;flex-shrink:0}
+.chg-num{font-size:12px;width:44px;flex-shrink:0;font-weight:700;text-align:left}
+.chg-num.pos{color:#4a8a1e}
+.chg-num.neg{color:#006e82}
+.chg-num.zer{color:#bbb;font-weight:400}
+.chg-det{margin-top:8px;background:#eef8f9;border-left:3px solid #1896ae;border-radius:0 5px 5px 0;padding:7px 12px;font-size:11.5px;color:#414042;display:none;line-height:1.55}
+.chg-det.show{display:block}
+.chg-det strong{color:#006e82}
+
+/* S7: ECOSYSTEM BRIDGE */
+.bridge-intro{font-size:13px;color:#607080;text-align:center;max-width:600px;line-height:1.6;margin-bottom:18px;font-family:Georgia,serif;flex-shrink:0}
+.bridge-grid{display:flex;gap:11px;flex-wrap:nowrap;justify-content:center;width:100%;max-width:840px;flex-shrink:0}
+.bridge-card{background:#f6fafb;border-radius:10px;padding:18px 16px 14px;flex:1;min-width:120px;border-top:4px solid #1896ae;box-shadow:0 2px 8px rgba(0,0,0,0.06);text-align:center;position:relative}
+.bridge-cnt{font-size:30px;font-weight:700;line-height:1;margin-bottom:1px}
+.bridge-cnt-sub{font-size:9px;color:#9aacb2;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
+.bridge-name{font-size:13px;font-weight:700;color:#1a3d5c;margin-bottom:5px}
+.bridge-desc{font-size:9.5px;color:#7a90a0;line-height:1.4}
+.bridge-star{position:absolute;top:10px;right:12px;font-size:14px;color:#f5a623}
+.bridge-next{margin-top:18px;font-size:12px;color:#b0c4cc;text-align:center;flex-shrink:0}
+.bridge-next span{color:#1896ae;font-weight:700}
+
+/* S8: COMPETITIVE READINESS */
+.eco-inner{width:100%;max-width:780px;display:flex;flex-direction:column;gap:6px}
+.eco-tabs{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.eco-tab{padding:6px 14px;border:none;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;background:#ebebeb;color:#666;transition:all 0.15s;font-family:inherit}
+.eco-tab.active{background:#1896ae;color:#fff}
+.eco-tab-sc{font-weight:400;opacity:0.75;font-size:10px}
+.eco-sum{display:flex;align-items:center;gap:8px;font-size:12px;color:#555;justify-content:center}
+.eco-badge{background:#77c043;color:#fff;border-radius:4px;padding:4px 10px;font-size:12px;font-weight:700;flex-shrink:0}
+.eco-tog{background:#ebebeb;border:none;border-radius:4px;padding:4px 11px;font-size:11px;cursor:pointer;color:#666;font-family:inherit;transition:all 0.15s}
+.eco-tog.on{background:#77c043;color:#fff}
+.eco-list{overflow-y:auto;display:flex;flex-direction:column;gap:4px;max-height:290px}
+.eco-list::-webkit-scrollbar{width:3px}
+.eco-list::-webkit-scrollbar-thumb{background:#d0dce2;border-radius:2px}
+.eco-row{display:flex;align-items:center;gap:8px;padding:2px;flex-shrink:0}
+.eco-type{font-size:9px;font-weight:700;border-radius:3px;padding:2px 5px;flex-shrink:0;width:50px;text-align:center}
+.eco-type.emp{background:rgba(24,150,174,0.12);color:#1896ae;border:1px solid rgba(24,150,174,0.3)}
+.eco-type.est{background:rgba(237,154,34,0.15);color:#b87010;border:1px solid rgba(237,154,34,0.35)}
+.eco-type.phy{background:rgba(100,60,180,0.12);color:#6030b0;border:1px solid rgba(100,60,180,0.3)}
+.eco-ename{font-size:12px;width:185px;flex-shrink:0;color:#414042;line-height:1.3}
+.eco-bwrap{flex:1;height:18px;background:linear-gradient(to right,#ebebeb 67%,rgba(119,192,67,0.22) 67%);border-radius:3px;position:relative;overflow:hidden}
+.eco-bfill{height:100%;border-radius:3px;transition:width 0.45s}
+.eco-bfill.strong{background:#77c043}
+.eco-bfill.weak{background:#b8d8dc}
+.eco-ref{position:absolute;top:0;bottom:0;left:67%;width:2px;background:rgba(80,160,60,0.7)}
+.eco-ztag{position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:8px;font-weight:700;color:rgba(60,120,20,0.6);white-space:nowrap;pointer-events:none}
+.eco-score{font-size:12px;width:28px;text-align:right;font-weight:700;flex-shrink:0}
+.eco-score.strong{color:#4a8a1e}
+.eco-score.weak{color:#aaa}
+.eco-star{font-size:12px;width:14px;flex-shrink:0;color:#f5a623}
+.eco-leg{font-size:9px;color:#bbb;border-top:1px solid #eee;padding-top:4px;text-align:center}
+
+/* S9: STAKEHOLDER DIR */
+.dir-inner{width:100%;max-width:980px;flex:1;display:flex;flex-direction:column;min-height:0}
+.dir-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:8px;flex:1;min-height:0}
+.dir-panel{border-radius:7px;overflow:hidden;border:1px solid #dde6ec;display:flex;flex-direction:column;background:#fff;box-shadow:0 1px 5px rgba(0,0,0,0.05)}
+.dir-ph{padding:7px 11px;color:#fff;display:flex;align-items:center;gap:7px;flex-shrink:0}
+.dir-pnum{font-size:13px;font-weight:700;opacity:0.9;width:16px;flex-shrink:0}
+.dir-pname{font-size:10px;font-weight:700;line-height:1.2}
+.dir-body{padding:5px 9px;overflow-y:auto;flex:1}
+.dir-body::-webkit-scrollbar{width:3px}
+.dir-body::-webkit-scrollbar-thumb{background:#d0dce2;border-radius:2px}
+.dir-item{display:flex;align-items:flex-start;gap:5px;padding:3.5px 0;border-bottom:1px solid rgba(0,0,0,0.04)}
+.dir-item:last-child{border-bottom:none}
+.dir-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.dir-txt{flex:1;min-width:0}
+.dir-name{font-size:10px;font-weight:600;color:#1a3d5c;line-height:1.2}
+.dir-type{font-size:9px;color:#7090a4}
+.dir-loc{font-size:8.5px;font-style:italic;color:#a0b5c0;margin-top:1px}
+
+/* S10: D3 NETWORK */
+.net-inner{width:100%;max-width:980px;flex:1;display:flex;flex-direction:column;min-height:0}
+.net-ctrls{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px;flex-shrink:0;justify-content:center}
+.npfbtn{font-size:9.5px;font-weight:700;padding:4px 10px;border-radius:12px;border:1.5px solid;cursor:pointer;letter-spacing:0.3px;font-family:inherit;transition:all 0.15s}
+.net-wrap{flex:1;position:relative;min-height:0;border-radius:8px;overflow:hidden;background:#fafcfd;border:1px solid #dde6ec}
+#net-svg{width:100%;height:100%}
+#net-tip{position:absolute;pointer-events:none;background:rgba(255,255,255,0.97);border:1px solid #c8d8e4;border-radius:6px;padding:7px 11px;font-size:10.5px;box-shadow:0 2px 10px rgba(0,0,0,0.1);opacity:0;transition:opacity 0.12s;max-width:210px;z-index:200;line-height:1.4}
+.ntt-name{font-size:11.5px;font-weight:700;color:#1a3d5c;margin-bottom:2px}
+.ntt-type{color:#607080}
+.ntt-loc{color:#8090a0;font-style:italic;font-size:9px;margin-top:1px}
+.ntt-pill{display:inline-block;color:#fff;font-size:8.5px;font-weight:700;padding:2px 6px;border-radius:10px;margin-top:4px}
+.net-leg{display:flex;gap:9px;flex-wrap:wrap;margin-top:5px;flex-shrink:0;justify-content:center}
+.nleg-item{display:flex;align-items:center;gap:4px;font-size:9px;color:#707888}
+.nleg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.net-note{font-size:11px;color:#445060;text-align:center;font-style:italic;margin-top:4px;flex-shrink:0;font-weight:500}
+
+/* S11: QR */
+.qr-wrap{padding:14px;background:#fff;border:2px solid #1896ae;border-radius:10px;box-shadow:0 4px 18px rgba(0,110,130,0.12)}
+</style>
+</head>
+<body>
+
+<!-- S1: MAP -->
+<div class="scene" id="s1">
+  <div class="tag">ReImagine Appalachia · Cabell County, WV</div>
+  <div class="stitle">Industrial Core of the Ohio River Valley</div>
+  <div class="ssub">Huntington MSA · Tri-State Region: WV · KY · OH</div>
+  <div id="leaflet-map"></div>
+  <div class="map-leg-row">
+    <div class="ml-i"><div class="ml-sw" style="background:rgba(119,192,67,0.45);border-color:#006e82"></div><span>Cabell County</span></div>
+    <div class="ml-i"><div class="ml-sw" style="background:rgba(24,150,174,0.09);border-color:#1896ae;border-style:dashed"></div><span>WV neighbors</span></div>
+    <div class="ml-i"><div class="ml-sw" style="background:rgba(237,154,34,0.12);border-color:#ed9a22;border-style:dashed"></div><span>OH &amp; KY counties</span></div>
+    <div class="ml-i"><div class="ml-dt" style="background:#77c043;border:2px solid #006e82"></div><span>County seat</span></div>
+    <div class="ml-i"><div class="ml-dt" style="background:#1896ae;border:1.5px solid #005c6e"></div><span>Cities &amp; towns</span></div>
+  </div>
+</div>
+
+<!-- S2: STATS + COUNTY OUTLINE -->
+<div class="scene" id="s2">
+  <div class="tag">Cabell County, WV · 2023 Snapshot</div>
+  <div class="stitle">A Manufacturing County Punching Above Its Weight</div>
+  <div class="ssub">Primary Metal Manufacturing LQ of 13.39 — nearly 14× the national specialization</div>
+  <div class="s2-layout">
+    <div class="s2-map-col">
+      <div id="county-outline-map"></div>
+      <div class="s2-county-lbl">Cabell County</div>
+      <div class="s2-county-sub">West Virginia · SW corner</div>
+    </div>
+    <div class="s2-stats-col">
+      <div class="stats-grid">
+        <div class="stat-card hi">
+          <div class="stat-lbl">Manufacturing Employment</div>
+          <div class="stat-val">4,794</div>
+          <div class="stat-sub">jobs in 2023</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">Manufacturing Establishments</div>
+          <div class="stat-val">47</div>
+          <div class="stat-sub">manufacturing firms, 2023</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">Avg. Manufacturing Wage</div>
+          <div class="stat-val">$70,958</div>
+          <div class="stat-sub">annual · all mfg. sectors</div>
+        </div>
+        <div class="stat-card hi">
+          <div class="stat-lbl">Overall Manufacturing LQ</div>
+          <div class="stat-val">1.20</div>
+          <div class="stat-sub">above national average</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cite">U.S. Census Bureau CBP 2023 · BLS QCEW · Manufacturing Intelligence Platform (manf.us)</div>
+</div>
+
+<!-- S3: COMBINED EMPLOYMENT + LQ -->
+<div class="scene" id="s3">
+  <div class="tag">Employment &amp; Specialization · 2023</div>
+  <div class="stitle">Manufacturing Sectors at a Glance</div>
+  <div class="ssub">Metal &amp; Durable Goods (NAICS 33) — 4,130 jobs and an LQ of 1.91 above the national average</div>
+  <div class="chart-inner">
+    <div class="chart-box"><canvas id="ch-combo"></canvas></div>
+    <div class="combo-leg">
+      <div class="combo-leg-i"><div class="combo-leg-sw" style="background:#006e82"></div><span>Employment (bars)</span></div>
+      <div class="combo-leg-i"><span style="color:#4a8a1e;font-weight:700">LQ ≥ 1.0</span>&nbsp;specialized · <span style="color:#888;font-weight:700">LQ &lt; 1.0</span>&nbsp;below national avg</div>
+    </div>
+    <div class="chart-note">U.S. Census Bureau, CBP 2023</div>
+  </div>
+  <div class="cite">Source: Manufacturing Intelligence Platform (manf.us) · Dr. Nikhil Kalathil</div>
+</div>
+
+<!-- S4: PRIMARY METAL LQ RANKINGS -->
+<div class="scene" id="s4">
+  <div class="tag">NAICS-3 Specialization Rankings · 2023</div>
+  <div class="stitle">Fabricated Metal: Cabell's Gateway to Advanced Manufacturing</div>
+  <div class="ssub">Miscellaneous Mfg. leads at LQW 11.17 · Fabricated Metal Products (332) at LQW 2.62 — the precision advanced mfg. anchor</div>
+  <div class="lq-inner">
+    <div class="tog-row">
+      <button class="btn-tog on" id="tog-w">Within Manufacturing</button>
+      <button class="btn-tog" id="tog-a">All Industries (True LQ)</button>
+    </div>
+    <div class="lq-ref">&#9670; LQ &gt; 1.0 (dark teal) = more specialized than the national average · top 3 industries highlighted</div>
+    <div class="lq-list" id="lq-list"></div>
+    <div style="margin-top:10px;font-size:10.5px;color:rgba(90,120,140,0.85);font-style:italic;text-align:center">&#9432; Employment data for most manufacturing subsectors are suppressed by the Census Bureau to protect confidentiality. Only four subsectors had disclosable counts; the remaining sectors are not shown.</div>
+  </div>
+  <div class="cite">Source: Manufacturing Intelligence Platform (manf.us) · Dr. Nikhil Kalathil</div>
+</div>
+
+<!-- S5: ANIMATED SUPPLY CHAIN NETWORK -->
+<div class="scene" id="s5">
+  <div class="tag" style="color:#5ab8c8">Supply Chain Network · Clean Energy Economy</div>
+  <div class="stitle" style="color:#ffffff">From Steel Plate to Clean Energy</div>
+  <div class="ssub" style="color:rgba(160,200,215,0.75);margin-bottom:6px">Fabricated Plate Work Mfg. (NAICS 332313) — connecting Cabell County to wind, solar, hydrogen &amp; grid-scale clean energy</div>
+  <div class="net8-inner">
+    <!--
+      viewBox 1000×630 → scales to fill the available height much more fully.
+      Left panel x=0–330 (center 165); upstream nodes cx=220, r=35; labels text-anchor=end at x=181
+      Right panel x=670–1000 (center 835); downstream nodes cx=780, r=35; labels text-anchor=start at x=819
+      Hub cx=500 cy=325 r=88; hub left=412 hub right=588
+      Node y positions: [100, 213, 325, 438, 550]; step≈113
+      Upstream path: M node-right,y C 340,y 385,325 412,325
+      Downstream path: M 588,325 C 615,325 660,y node-left,y
+    -->
+    <svg id="net8-svg" viewBox="0 0 1000 630" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%">
+
+      <!-- Panel backgrounds — wider panels so nodes sit centered within them -->
+      <rect x="0"   y="0" width="330" height="630" fill="rgba(255,255,255,0.03)"/>
+      <rect x="670" y="0" width="330" height="630" fill="rgba(255,255,255,0.03)"/>
+
+      <!-- Panel headers — fade in first -->
+      <g class="n5hdr">
+        <text x="165" y="26" text-anchor="middle" fill="#8899aa" font-size="11" font-family="sans-serif" letter-spacing="2" font-weight="700">RAW MATERIAL INPUTS</text>
+        <text x="835" y="26" text-anchor="middle" fill="#8899aa" font-size="11" font-family="sans-serif" letter-spacing="2" font-weight="700">CLEAN ENERGY APPLICATIONS</text>
+      </g>
+
+      <!-- upstream paths -->
+      <path class="n5pu" d="M217,100 C295,100 405,315 412,325" fill="none" stroke="#6a7a8a" stroke-width="2.5" opacity="0.7"/>
+      <path class="n5pu" d="M217,213 C285,213 405,315 412,325" fill="none" stroke="#8a6020" stroke-width="2.5" opacity="0.7"/>
+      <path class="n5pu" d="M217,325 C285,325 412,325 412,325" fill="none" stroke="#405070" stroke-width="2.5" opacity="0.7"/>
+      <path class="n5pu" d="M217,438 C285,438 405,335 412,325" fill="none" stroke="#406040" stroke-width="2.5" opacity="0.7"/>
+      <path class="n5pu" d="M217,550 C295,550 410,340 412,325" fill="none" stroke="#604070" stroke-width="2.5" opacity="0.7"/>
+
+      <!-- downstream paths -->
+      <path class="n5pd" d="M588,325 C600,325 660,110 783,100" fill="none" stroke="#4a8ab0" stroke-width="2.5" opacity="0.7"/>
+      <path class="n5pd" d="M588,325 C600,325 660,220 783,213" fill="none" stroke="#c09030" stroke-width="2.5" opacity="0.7"/>
+      <path class="n5pd" d="M588,325 C608,325 668,325 783,325" fill="none" stroke="#20a0b0" stroke-width="2.5" opacity="0.7"/>
+      <path class="n5pd" d="M588,325 C600,325 660,430 783,438" fill="none" stroke="#77c043" stroke-width="2.5" opacity="0.7"/>
+      <path class="n5pd" d="M588,325 C600,325 660,540 783,550" fill="none" stroke="#3a8870" stroke-width="2.5" opacity="0.7"/>
+
+      <!-- hub -->
+      <circle class="n5hub" cx="500" cy="325" r="88" fill="#0d1520" stroke="#f5a623" stroke-width="3"/>
+      <text x="500" y="298" text-anchor="middle" fill="#f5a623" font-size="10.5" font-family="sans-serif" font-weight="700">NAICS 332313</text>
+      <text x="500" y="314" text-anchor="middle" fill="#ffffff" font-size="10" font-family="sans-serif">Plate Work</text>
+      <text x="500" y="329" text-anchor="middle" fill="#ffffff" font-size="10" font-family="sans-serif">Mfg.</text>
+      <text x="500" y="346" text-anchor="middle" fill="#aaccff" font-size="10" font-family="sans-serif">Fab. Metal LQ 2.62×</text>
+      <text x="500" y="361" text-anchor="middle" fill="#aaccff" font-size="9.5" font-family="sans-serif">Cabell Co., WV</text>
+
+      <!-- upstream nodes — text centered inside circles -->
+      <g class="n5up">
+        <circle cx="165" cy="100" r="52" fill="#1a2030" stroke="#6a7a8a" stroke-width="2"/>
+        <text x="165" y="96" text-anchor="middle" fill="#ccddee" font-size="10.5" font-family="sans-serif" font-weight="600">Steel Plate</text>
+        <text x="165" y="112" text-anchor="middle" fill="#ccddee" font-size="10.5" font-family="sans-serif" font-weight="600">&amp; Sheet Stock</text>
+      </g>
+      <g class="n5up">
+        <circle cx="165" cy="213" r="52" fill="#2a1a00" stroke="#8a6020" stroke-width="2"/>
+        <text x="165" y="209" text-anchor="middle" fill="#ccddee" font-size="10.5" font-family="sans-serif" font-weight="600">Welding</text>
+        <text x="165" y="225" text-anchor="middle" fill="#ccddee" font-size="10.5" font-family="sans-serif" font-weight="600">Consumables</text>
+      </g>
+      <g class="n5up">
+        <circle cx="165" cy="325" r="52" fill="#0a1a2a" stroke="#405070" stroke-width="2"/>
+        <text x="165" y="321" text-anchor="middle" fill="#ccddee" font-size="10.5" font-family="sans-serif" font-weight="600">CNC Plasma /</text>
+        <text x="165" y="337" text-anchor="middle" fill="#ccddee" font-size="10.5" font-family="sans-serif" font-weight="600">Laser Cutting</text>
+      </g>
+      <g class="n5up">
+        <circle cx="165" cy="438" r="52" fill="#0a1a0a" stroke="#406040" stroke-width="2"/>
+        <text x="165" y="430" text-anchor="middle" fill="#ccddee" font-size="10" font-family="sans-serif" font-weight="600">Fittings,</text>
+        <text x="165" y="445" text-anchor="middle" fill="#ccddee" font-size="10" font-family="sans-serif" font-weight="600">Flanges &amp;</text>
+        <text x="165" y="460" text-anchor="middle" fill="#ccddee" font-size="10" font-family="sans-serif" font-weight="600">Fasteners</text>
+      </g>
+      <g class="n5up">
+        <circle cx="165" cy="550" r="52" fill="#1a0a2a" stroke="#604070" stroke-width="2"/>
+        <text x="165" y="546" text-anchor="middle" fill="#ccddee" font-size="10.5" font-family="sans-serif" font-weight="600">NDT / Quality</text>
+        <text x="165" y="562" text-anchor="middle" fill="#ccddee" font-size="10.5" font-family="sans-serif" font-weight="600">Inspection</text>
+      </g>
+
+      <!-- downstream nodes — text centered inside circles, clean energy -->
+      <g class="n5dn">
+        <circle cx="835" cy="100" r="52" fill="#0a2040" stroke="#4a8ab0" stroke-width="2"/>
+        <text x="835" y="91" text-anchor="middle" fill="#ccddee" font-size="13" font-family="sans-serif">&#x1f32c;</text>
+        <text x="835" y="108" text-anchor="middle" fill="#ccddee" font-size="10.5" font-family="sans-serif" font-weight="600">Wind Tower</text>
+        <text x="835" y="123" text-anchor="middle" fill="#ccddee" font-size="10.5" font-family="sans-serif" font-weight="600">Shell Sections</text>
+      </g>
+      <g class="n5dn">
+        <circle cx="835" cy="213" r="52" fill="#2a2000" stroke="#c09030" stroke-width="2"/>
+        <text x="835" y="204" text-anchor="middle" fill="#ccddee" font-size="13" font-family="sans-serif">&#x2600;</text>
+        <text x="835" y="221" text-anchor="middle" fill="#ccddee" font-size="10.5" font-family="sans-serif" font-weight="600">Solar Racking</text>
+        <text x="835" y="236" text-anchor="middle" fill="#ccddee" font-size="10.5" font-family="sans-serif" font-weight="600">&amp; Mnt. Frames</text>
+      </g>
+      <g class="n5dn">
+        <circle cx="835" cy="325" r="52" fill="#002030" stroke="#20a0b0" stroke-width="2"/>
+        <text x="835" y="316" text-anchor="middle" fill="#ccddee" font-size="13" font-family="sans-serif">&#x1f4a7;</text>
+        <text x="835" y="333" text-anchor="middle" fill="#ccddee" font-size="10.5" font-family="sans-serif" font-weight="600">Green H&#x2082;</text>
+        <text x="835" y="348" text-anchor="middle" fill="#ccddee" font-size="10.5" font-family="sans-serif" font-weight="600">Storage Vessels</text>
+      </g>
+      <g class="n5dn">
+        <circle cx="835" cy="438" r="52" fill="#0a2010" stroke="#77c043" stroke-width="2"/>
+        <text x="835" y="429" text-anchor="middle" fill="#ccddee" font-size="13" font-family="sans-serif">&#x1f50b;</text>
+        <text x="835" y="446" text-anchor="middle" fill="#ccddee" font-size="10.5" font-family="sans-serif" font-weight="600">Grid Battery</text>
+        <text x="835" y="461" text-anchor="middle" fill="#ccddee" font-size="10.5" font-family="sans-serif" font-weight="600">Enclosures</text>
+      </g>
+      <g class="n5dn">
+        <circle cx="835" cy="550" r="52" fill="#002020" stroke="#3a8870" stroke-width="2"/>
+        <text x="835" y="541" text-anchor="middle" fill="#ccddee" font-size="13" font-family="sans-serif">&#x1f30a;</text>
+        <text x="835" y="558" text-anchor="middle" fill="#ccddee" font-size="10.5" font-family="sans-serif" font-weight="600">Hydro Penstock</text>
+        <text x="835" y="573" text-anchor="middle" fill="#ccddee" font-size="10.5" font-family="sans-serif" font-weight="600">&amp; Turbine Housing</text>
+      </g>
+
+      </g>
+
+    </svg>
+  </div>
+</div>
+
+<!-- S6: EMPLOYMENT CHANGE -->
+<div class="scene" id="s6">
+  <div class="tag">Employment Change · 2018–2023</div>
+  <div class="stitle">Momentum &amp; Structural Shifts</div>
+  <div class="ssub">Machinery and Miscellaneous Manufacturing grew; Primary Metal declined — transition, not collapse</div>
+  <div class="chg-inner">
+    <div class="chg-filt">
+      <button class="btn-chg on all" id="cf-all">All Industries</button>
+      <button class="btn-chg grow" id="cf-grow">&#9650; Growing</button>
+      <button class="btn-chg decline" id="cf-decline">&#9660; Declining</button>
+    </div>
+    <div class="chg-scroll" id="chg-body"></div>
+    <div class="chg-det" id="chg-det"></div>
+  </div>
+  <div class="cite">Source: Manufacturing Intelligence Platform (manf.us) · Dr. Nikhil Kalathil</div>
+</div>
+
+<!-- S7: ECOSYSTEM ASSESSMENT BRIDGE -->
+<div class="scene" id="s7">
+  <div class="tag">AMCC Framework · Cabell County</div>
+  <div class="stitle">Ecosystem Assessment</div>
+  <div class="ssub">Advanced manufacturing competitiveness spans five domains — Cabell leads on infrastructure and capital access</div>
+  <div class="bridge-grid" id="bridge-grid"></div>
+  <div class="bridge-next">→ Next: detailed competitive indicators by domain &nbsp;<span>Competitive Readiness →</span></div>
+  <div class="cite">Source: Manufacturing Intelligence Platform (manf.us) · Dr. Nikhil Kalathil</div>
+</div>
+
+<!-- S8: COMPETITIVE READINESS -->
+<div class="scene" id="s8">
+  <div class="tag">Ecosystem Assessment · AMCC Framework</div>
+  <div class="stitle">Competitive Readiness</div>
+  <div class="ssub">Indicators at or above the 67th percentile — top one-third of all U.S. counties</div>
+  <div class="eco-inner">
+    <div class="eco-tabs" id="eco-tabs"></div>
+    <div class="eco-sum">
+      <span class="eco-badge" id="eco-count">—</span>
+      <span>indicators in <strong style="color:#77c043">competitive zone</strong> &nbsp;(≥ 67th percentile)</span>
+      <button class="eco-tog" id="eco-tog">Competitive Only</button>
+    </div>
+    <div class="eco-list" id="eco-list"></div>
+    <div class="eco-leg">
+      <span style="color:#1896ae;font-weight:700">EMP LQ</span> Employment LQ &nbsp;·&nbsp;
+      <span style="color:#b87010;font-weight:700">EST LQ</span> Establishment LQ &nbsp;·&nbsp;
+      <span style="color:#6030b0;font-weight:700">PHYS</span> Physical infrastructure &nbsp;·&nbsp;
+      ★ = competitive zone &nbsp;·&nbsp;
+      <span style="color:rgba(210,70,10,0.8)">|</span> = 67th percentile threshold
+    </div>
+  </div>
+  <div class="cite">Source: Manufacturing Intelligence Platform (manf.us) · Dr. Nikhil Kalathil</div>
+</div>
+
+<!-- S9: STAKEHOLDER DIR -->
+<div class="scene" id="s9">
+  <div class="tag">AMCC Big 6 · Cabell County + Neighboring Region</div>
+  <div class="stitle">Building the Ecosystem — Who's in the Room</div>
+  <div class="ssub">Key organizations across the six AMCC manufacturing ecosystem pillars</div>
+  <div class="dir-inner">
+    <div class="dir-grid" id="dir-grid"></div>
+  </div>
+</div>
+
+<!-- S10: D3 NETWORK -->
+<div class="scene" id="s10">
+  <div class="tag">Illustrative Asset Map · AMCC Ecosystem</div>
+  <div class="stitle">How the Ecosystem Connects</div>
+  <div class="ssub">Click a node to highlight connections · Drag to explore · Filter by pillar</div>
+  <div class="net-inner">
+    <div class="net-ctrls" id="net-ctrls"></div>
+    <div class="net-wrap" id="net-wrap">
+      <svg id="net-svg"></svg>
+      <div id="net-tip"></div>
+    </div>
+    <div class="net-leg" id="net-leg"></div>
+    <div class="net-note">Connections are illustrative — based on complementary roles &amp; known collaborations.</div>
+  </div>
+</div>
+
+<!-- S11: EXPLORE -->
+<div class="scene" id="s11">
+  <div class="tag">ReImagine Appalachia · Manufacturing Intelligence</div>
+  <div class="stitle">Explore the Full Cabell County Dashboard</div>
+  <div class="ssub">Dive deeper into the data — live, interactive, searchable</div>
+  <div class="qr-wrap"><div id="qr-code"></div></div>
+  <div style="font-size:15px;color:#414042;font-weight:600;margin-top:14px">Scan with your phone · or visit:</div>
+  <div style="margin-top:6px"><a href="https://tinyurl.com/cabell-county-wv" target="_blank" style="color:#1896ae;text-decoration:none;font-weight:700;font-size:14px">tinyurl.com/cabell-county-wv</a></div>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <button class="nav-btn" id="prevBtn" onclick="go(-1)" disabled>← Prev</button>
+  <div class="dots" id="dots"></div>
+  <span class="scnt" id="scnt">1 / 11</span>
+  <button class="nav-btn" id="nextBtn" onclick="go(1)">Next →</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+/* ══ NAV ══ */
+var TOTAL=11,cur=0;
+var dotsEl=document.getElementById('dots');
+for(var i=0;i<TOTAL;i++){(function(idx){
+  var d=document.createElement('div');
+  d.className='dot'+(idx===0?' active':'');d.id='dot-'+idx;
+  d.onclick=function(){goScene(idx);};dotsEl.appendChild(d);
+})(i);}
+function go(dir){goScene(cur+dir);}
+function goScene(idx){
+  if(idx<0||idx>=TOTAL)return;
+  document.getElementById('s'+(cur+1)).classList.remove('active');
+  document.getElementById('dot-'+cur).classList.remove('active');
+  cur=idx;
+  document.getElementById('s'+(cur+1)).classList.add('active');
+  document.getElementById('dot-'+cur).classList.add('active');
+  document.getElementById('scnt').textContent=(cur+1)+' / '+TOTAL;
+  document.getElementById('prevBtn').disabled=cur===0;
+  document.getElementById('nextBtn').disabled=cur===TOTAL-1;
+  /* S5 (index 4) is the dark scene */
+  document.body.classList.toggle('dark-nav',cur===4);
+  if(cur===0&&typeof leafletMap!=='undefined') setTimeout(function(){leafletMap.invalidateSize();},60);
+  if(cur===1&&!countyMapBuilt) setTimeout(buildCountyMap,80);
+  if(cur===9&&!netBuilt) setTimeout(buildNetwork,80);
+}
+document.addEventListener('keydown',function(e){if(e.key==='ArrowRight')go(1);if(e.key==='ArrowLeft')go(-1);});
+document.getElementById('s1').classList.add('active');
+
+/* ══ S1: MAIN MAP ══ */
+var leafletMap=L.map('leaflet-map',{center:[38.38,-82.33],zoom:9,zoomControl:true,attributionControl:false});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:19}).addTo(leafletMap);
+var CABELL=54011,WV_NBRS=[54079,54043,54099],OH_KY=[39087,21019,21089];
+var ohKyNames={39087:'Lawrence County, OH',21019:'Boyd County, KY',21089:'Greenup County, KY'};
+var wvNames={54079:'Putnam County, WV',54043:'Lincoln County, WV',54099:'Wayne County, WV'};
+fetch('https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json')
+  .then(function(r){return r.json();})
+  .then(function(us){
+    var all=topojson.feature(us,us.objects.counties).features;
+    var main=null,wvNbrs=[],ohky=[];
+    all.forEach(function(f){
+      var id=parseInt(f.id,10);
+      if(id===CABELL)main=f;
+      else if(WV_NBRS.indexOf(id)!==-1)wvNbrs.push(f);
+      else if(OH_KY.indexOf(id)!==-1)ohky.push(f);
+    });
+    if(ohky.length)L.geoJSON({type:'FeatureCollection',features:ohky},{
+      style:{fillColor:'#ed9a22',fillOpacity:0.10,color:'#ed9a22',weight:1.5,dashArray:'5 4'},
+      onEachFeature:function(f,layer){
+        layer.bindTooltip('<strong>'+(ohKyNames[parseInt(f.id,10)]||'County')+'</strong>',{sticky:true});
+        layer.on('mouseover',function(){layer.setStyle({fillOpacity:0.22});});
+        layer.on('mouseout',function(){layer.setStyle({fillOpacity:0.10});});
+      }}).addTo(leafletMap);
+    if(wvNbrs.length)L.geoJSON({type:'FeatureCollection',features:wvNbrs},{
+      style:{fillColor:'#1896ae',fillOpacity:0.08,color:'#1896ae',weight:1.5,dashArray:'5 4'},
+      onEachFeature:function(f,layer){
+        layer.bindTooltip('<strong>'+(wvNames[parseInt(f.id,10)]||'County')+'</strong>',{sticky:true});
+        layer.on('mouseover',function(){layer.setStyle({fillOpacity:0.20});});
+        layer.on('mouseout',function(){layer.setStyle({fillOpacity:0.08});});
+      }}).addTo(leafletMap);
+    if(main){
+      var ml=L.geoJSON(main,{style:{fillColor:'#77c043',fillOpacity:0.45,color:'#006e82',weight:3.5}}).addTo(leafletMap);
+      ml.bindTooltip('<strong>Cabell County</strong><br>West Virginia',{sticky:true});
+      leafletMap.fitBounds(ml.getBounds(),{padding:[24,24]});
+    }
+  }).catch(function(){leafletMap.setView([38.42,-82.28],9);});
+[{name:'Huntington',lat:38.4192,lng:-82.4452,seat:true,pop:'45,787'},
+ {name:'Barboursville',lat:38.4087,lng:-82.2960,seat:false,pop:'4,376'},
+ {name:'Milton',lat:38.4345,lng:-82.1360,seat:false,pop:'2,817'},
+ {name:'Kenova',lat:38.3993,lng:-82.5777,seat:false,pop:'2,944'},
+ {name:'Ceredo',lat:38.3962,lng:-82.5574,seat:false,pop:'1,528'}
+].forEach(function(c){
+  L.circleMarker([c.lat,c.lng],{
+    radius:c.seat?9:6,fillColor:c.seat?'#77c043':'#1896ae',fillOpacity:0.95,
+    color:c.seat?'#006e82':'#005c6e',weight:c.seat?2.5:1.5
+  }).addTo(leafletMap).bindPopup(
+    '<div style="font-weight:700;color:#006e82;font-size:13px">'+c.name+(c.seat?' ★':'')+'</div>'+
+    '<div style="font-size:11px;color:#6b6b6b">Pop. <strong>'+c.pop+'</strong></div>'
+  );
+});
+
+/* ══ S2: COUNTY OUTLINE MAP ══ */
+var countyMapBuilt=false,countyMapData=null;
+function buildCountyMap(){
+  countyMapBuilt=true;
+  var cmap=L.map('county-outline-map',{center:[38.7,-80.6],zoom:6,zoomControl:false,attributionControl:false,scrollWheelZoom:false,dragging:false,doubleClickZoom:false,boxZoom:false,keyboard:false});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:12}).addTo(cmap);
+  var doRender=function(us){
+    var all=topojson.feature(us,us.objects.counties).features;
+    var wvAll=all.filter(function(f){return Math.floor(parseInt(f.id,10)/1000)===54;});
+    L.geoJSON({type:'FeatureCollection',features:wvAll},{
+      style:function(f){
+        return parseInt(f.id,10)===54011
+          ?{fillColor:'#77c043',fillOpacity:0.6,color:'#006e82',weight:2.5}
+          :{fillColor:'#ccdee8',fillOpacity:0.45,color:'#a8c4d0',weight:0.8};
+      },
+      onEachFeature:function(f,layer){
+        if(parseInt(f.id,10)===54011){
+          layer.bindTooltip('<strong>Cabell County</strong>',{permanent:false,sticky:true});
+        }
+      }
+    }).addTo(cmap);
+    setTimeout(function(){cmap.invalidateSize();},60);
+  };
+  if(countyMapData){doRender(countyMapData);}
+  else{
+    fetch('https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json')
+      .then(function(r){return r.json();})
+      .then(function(us){countyMapData=us;doRender(us);})
+      .catch(function(){});
+  }
+}
+
+/* ══ S3: COMBINED EMPLOYMENT + LQ CHART ══ */
+var SLBL=[['NAICS 31','Consumer &\nOther Goods'],['NAICS 32','Building &\nConstruction'],['NAICS 33','Metal &\nDurable Goods']];
+var SEMP=[373,291,4130],SWAGE=[46000,35000,76000],SLQ=[0.49,0.27,1.91];
+var SFULL=['Consumer & Other Goods (NAICS 31)','Building & Construction (NAICS 32)','Metal & Durable Goods (NAICS 33)'];
+Chart.register({id:'comboLbl',afterDatasetsDraw:function(chart){
+  if(chart.canvas.id!=='ch-combo')return;
+  var ctx=chart.ctx;
+  chart.data.datasets.forEach(function(ds,di){
+    var meta=chart.getDatasetMeta(di);if(meta.hidden)return;
+    meta.data.forEach(function(bar,j){
+      var top=bar.y,bot=chart.chartArea.bottom;
+      ctx.save();
+      /* employment above bar */
+      ctx.fillStyle='#414042';ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.fillText(SEMP[j].toLocaleString(),bar.x,top-16);
+      /* LQ label */
+      var lq=SLQ[j];var lqColor=lq>=1?'#3d8c18':'#888';
+      ctx.fillStyle=lqColor;ctx.font='bold 10px Arial';ctx.textBaseline='bottom';
+      ctx.fillText('LQ '+lq.toFixed(2),bar.x,top-3);
+      /* LQ inside bar if tall enough */
+      var bh=bot-top;
+      if(bh>60){
+        ctx.fillStyle='rgba(255,255,255,0.80)';ctx.font='bold 11px Arial';ctx.textBaseline='middle';
+        ctx.fillText('LQ '+lq.toFixed(2),bar.x,top+bh*0.52);
+      }
+      ctx.restore();
+    });
+  });
+}});
+new Chart(document.getElementById('ch-combo'),{type:'bar',
+  data:{labels:SLBL,datasets:[{data:SEMP,backgroundColor:['#80c8d4','#1896ae','#006e82'],borderRadius:6,borderSkipped:false}]},
+  options:{responsive:true,maintainAspectRatio:false,animation:{duration:600},
+    plugins:{legend:{display:false},tooltip:{callbacks:{title:function(){return'';},label:function(c){return'  '+SFULL[c.dataIndex];},afterLabel:function(c){return['  Jobs: '+SEMP[c.dataIndex].toLocaleString(),'  Avg. Wage: $'+SWAGE[c.dataIndex].toLocaleString(),'  LQ: '+SLQ[c.dataIndex].toFixed(2)+(SLQ[c.dataIndex]>=1?' ▲':' ▼')];}}}},
+    scales:{y:{beginAtZero:true,grid:{color:'#eee'},ticks:{callback:function(v){return v.toLocaleString();}},title:{display:true,text:'Employment (jobs)',font:{size:12},color:'#999'}},x:{grid:{display:false}}}}
+});
+
+/* ══ S4: LQ RANKINGS ══ */
+var LQN=['Miscellaneous Mfg. (339)','Printing & Related Support (323)','Fabricated Metal Products (332)','Nonmetallic Mineral Products (327)'];
+var LQW=[11.17,3.17,2.62,2.30];
+var LQA=[4.65,1.32,1.09,0.96];
+function renderLQ(mode){
+  var data=mode==='w'?LQW:LQA;
+  var list=document.getElementById('lq-list');list.innerHTML='';
+  /* top-3 box */
+  var box=document.createElement('div');box.className='top3-box';
+  var lbl=document.createElement('div');lbl.className='top3-lbl';lbl.textContent='★  Top 3 Manufacturing Specializations';box.appendChild(lbl);
+  LQN.forEach(function(name,i){
+    var val=data[i],pct=Math.min(val/12*100,100);
+    var row=document.createElement('div');row.className='lq-row';
+    row.innerHTML='<div class="lq-name">'+name+'</div>'+
+      '<div class="lq-track"><div class="lq-fill '+(val>=1?'above':'below')+'" style="width:'+pct+'%"></div></div>'+
+      '<div class="lq-num">'+val.toFixed(2)+'</div>';
+    if(i<3){box.appendChild(row);}else{list.appendChild(row);}
+  });
+  list.insertBefore(box,list.firstChild);
+}
+renderLQ('w');
+document.getElementById('tog-w').addEventListener('click',function(){this.classList.add('on');document.getElementById('tog-a').classList.remove('on');renderLQ('w');});
+document.getElementById('tog-a').addEventListener('click',function(){this.classList.add('on');document.getElementById('tog-w').classList.remove('on');renderLQ('a');});
+
+/* ══ S6: EMPLOYMENT CHANGE ══ */
+var CHG_DATA=[
+  {s:31,sN:'Consumer & Other Goods (NAICS 31)',name:'Food Manufacturing',val:138},
+  {s:31,sN:'Consumer & Other Goods (NAICS 31)',name:'Beverage & Tobacco Products',val:0},
+  {s:32,sN:'Building & Construction Materials (NAICS 32)',name:'Nonmetallic Mineral Products',val:36},
+  {s:32,sN:'Building & Construction Materials (NAICS 32)',name:'Wood Product Manufacturing',val:0},
+  {s:32,sN:'Building & Construction Materials (NAICS 32)',name:'Printing & Related Support',val:0},
+  {s:32,sN:'Building & Construction Materials (NAICS 32)',name:'Plastics & Rubber Products',val:0},
+  {s:32,sN:'Building & Construction Materials (NAICS 32)',name:'Chemical Manufacturing',val:-38},
+  {s:33,sN:'Metal & Durable Goods (NAICS 33)',name:'Machinery Manufacturing',val:189},
+  {s:33,sN:'Metal & Durable Goods (NAICS 33)',name:'Miscellaneous Manufacturing',val:176},
+  {s:33,sN:'Metal & Durable Goods (NAICS 33)',name:'Fabricated Metal Products',val:54},
+  {s:33,sN:'Metal & Durable Goods (NAICS 33)',name:'Computer & Electronic Products',val:0},
+  {s:33,sN:'Metal & Durable Goods (NAICS 33)',name:'Electrical Equipment & Appliances',val:0},
+  {s:33,sN:'Metal & Durable Goods (NAICS 33)',name:'Transportation Equipment',val:-16},
+  {s:33,sN:'Metal & Durable Goods (NAICS 33)',name:'Primary Metal Manufacturing',val:-387}
+];
+var chgFilter='all',chgSel=null;
+function renderChg(){
+  var body=document.getElementById('chg-body'),det=document.getElementById('chg-det');
+  body.innerHTML='';det.classList.remove('show');chgSel=null;
+  var filtered=CHG_DATA.filter(function(d){return chgFilter==='grow'?d.val>0:chgFilter==='decline'?d.val<0:true;});
+  var sectors=[];
+  filtered.forEach(function(d){var sg=sectors.find(function(x){return x.s===d.s;});if(!sg){sg={s:d.s,sN:d.sN,items:[]};sectors.push(sg);}sg.items.push(d);});
+  if(!sectors.length){body.innerHTML='<div style="color:#bbb;font-size:11px;padding:12px 0">No industries match.</div>';return;}
+  sectors.forEach(function(sg){
+    var hdr=document.createElement('div');hdr.className='chg-shdr';hdr.textContent=sg.sN;body.appendChild(hdr);
+    sg.items.forEach(function(d){
+      var np=d.val<0?(Math.abs(d.val)/400*100):0,pp=d.val>0?(d.val/400*100):0;
+      var nc=d.val>0?'pos':(d.val<0?'neg':'zer'),nt=d.val>0?'+'+d.val:(d.val===0?'—':''+d.val);
+      var row=document.createElement('div');row.className='chg-row';
+      row.innerHTML='<div class="chg-rname">'+d.name+'</div>'+
+        '<div class="chg-track"><div class="chg-neg-side"><div class="chg-neg" style="width:'+np+'%"></div></div><div class="chg-ctr"></div><div class="chg-pos-side"><div class="chg-pos" style="width:'+pp+'%"></div></div></div>'+
+        '<div class="chg-num '+nc+'">'+nt+'</div>';
+      row.addEventListener('click',function(){
+        var prev=body.querySelector('.chg-row.selected');if(prev)prev.classList.remove('selected');
+        if(chgSel===d.name){chgSel=null;det.classList.remove('show');return;}
+        chgSel=d.name;row.classList.add('selected');
+        var trend=d.val>0?'grew by <strong>+'+d.val+' jobs</strong>.':d.val<0?'declined by <strong>'+d.val+' jobs</strong>.':'shows <strong>no net change</strong>.';
+        det.innerHTML='<strong>'+d.name+'</strong> (NAICS '+d.s+') '+trend+' <span style="color:#bbb">2018–2023 · CBP</span>';
+        det.classList.add('show');
+      });
+      body.appendChild(row);
+    });
+  });
+}
+renderChg();
+['all','grow','decline'].forEach(function(mode){
+  document.getElementById('cf-'+mode).addEventListener('click',function(){
+    chgFilter=mode;document.querySelectorAll('.btn-chg').forEach(function(b){b.classList.remove('on');});
+    this.classList.add('on');renderChg();
+  });
+});
+
+/* ══ S7: ECOSYSTEM BRIDGE ══ */
+var BRIDGE_DOMAINS=[
+  {name:'Infrastructure',color:'#1896ae',cnt:13,tot:20,star:true,desc:'Rail, port, airport, utilities & industrial site readiness'},
+  {name:'Capital',color:'#6e4bb5',cnt:3,tot:3,star:true,desc:'Venture capital, credit programs & loan participation'},
+  {name:'R&D',color:'#3a9e50',cnt:2,tot:8,star:false,desc:'Research institutions, incubators & technical consulting'},
+  {name:'Supply Chain',color:'#d96c20',cnt:2,tot:8,star:false,desc:'Industrial services, repair, rental & logistics support'},
+  {name:'Workforce',color:'#006e82',cnt:1,tot:5,star:false,desc:'Community colleges, trade programs & training capacity'},
+];
+(function(){
+  var grid=document.getElementById('bridge-grid');
+  BRIDGE_DOMAINS.forEach(function(d){
+    var card=document.createElement('div');card.className='bridge-card';
+    card.style.borderTopColor=d.color;
+    card.innerHTML=(d.star?'<div class="bridge-star">★</div>':'')+
+      '<div class="bridge-cnt" style="color:'+d.color+'">'+d.cnt+'/'+d.tot+'</div>'+
+      '<div class="bridge-cnt-sub">competitive indicators</div>'+
+      '<div class="bridge-name">'+d.name+'</div>'+
+      '<div class="bridge-desc">'+d.desc+'</div>';
+    grid.appendChild(card);
+  });
+})();
+
+/* ══ S8: COMPETITIVE READINESS ══ */
+var ECOSYSTEM={
+  'Workforce':{items:[{name:'Labor Unions',type:'EST LQ',val:73},{name:'Employment & Staffing Services',type:'EST LQ',val:62},{name:'Business & Professional Assoc.',type:'EST LQ',val:28},{name:'Colleges & Universities',type:'EST LQ',val:21},{name:'Workforce Development Services',type:'EST LQ',val:5}]},
+  'R&D':{items:[{name:'Scientific R&D',type:'EMP LQ',val:81},{name:'Environmental & Logistics Consulting',type:'EMP LQ',val:67},{name:'Software Publishers',type:'EMP LQ',val:50},{name:'Computer Systems & Programming',type:'EMP LQ',val:28},{name:'Data Processing & Hosting',type:'EMP LQ',val:13},{name:'Engineering & Testing Services',type:'EMP LQ',val:5},{name:'Industrial & Specialized Design',type:'EMP LQ',val:1},{name:'Scientific & Technical Consulting',type:'EMP LQ',val:1}]},
+  'Infra':{items:[{name:'Rail Miles per 1,000 mi²',type:'PHYS',val:95},{name:'Port Facilities',type:'PHYS',val:93},{name:'Airports per 1,000 mi²',type:'PHYS',val:81},{name:'Natural Gas Distribution',type:'EMP LQ',val:77},{name:'Water, Sewage & Steam',type:'EMP LQ',val:77},{name:'Water Transportation',type:'EMP LQ',val:77},{name:'Rail Route-Miles',type:'PHYS',val:76},{name:'Civil & Heavy Engineering',type:'EMP LQ',val:75},{name:'Air Transportation',type:'EMP LQ',val:73},{name:'Rail Transportation',type:'EMP LQ',val:73},{name:'Telecommunications',type:'EMP LQ',val:73},{name:'Commercial/Industrial Real Estate',type:'EMP LQ',val:71},{name:'Facility Services',type:'EMP LQ',val:68},{name:'Residential Construction',type:'EMP LQ',val:48},{name:'Airports (total)',type:'PHYS',val:48},{name:'Commercial/Industrial Construction',type:'EMP LQ',val:44},{name:'Waste Management & Remediation',type:'EMP LQ',val:41},{name:'Electric Power',type:'EMP LQ',val:25},{name:'General Warehousing',type:'EMP LQ',val:12},{name:'Truck Transportation',type:'EMP LQ',val:11}]},
+  'Supply':{items:[{name:'Industrial Machinery Repair',type:'EMP LQ',val:82},{name:'Truck/Trailer Rental',type:'EMP LQ',val:80},{name:'Industrial Machinery Rental',type:'EMP LQ',val:49},{name:'Construction Machinery Rental',type:'EMP LQ',val:42},{name:'Electronics/Precision Repair',type:'EMP LQ',val:35},{name:'Auto Repair',type:'EMP LQ',val:34},{name:'Refrigerated Warehousing',type:'EMP LQ',val:5},{name:'Mineral & Energy Resources',type:'EMP LQ',val:4}]},
+  'Capital':{items:[{name:'Management & Business Services',type:'EST LQ',val:84},{name:'Banking, Credit & Funds',type:'EST LQ',val:72},{name:'Securities & Investment',type:'EST LQ',val:68}]}
+};
+var ECO_THR=67,ecoTab='Infra',ecoComp=false;
+function ecoTypeCls(t){return t.indexOf('EMP')!==-1?'emp':(t.indexOf('EST')!==-1?'est':'phy');}
+function renderEco(){
+  var p=ECOSYSTEM[ecoTab];
+  var comp=p.items.filter(function(d){return d.val>=ECO_THR;});
+  var disp=ecoComp?comp:p.items;
+  document.getElementById('eco-count').textContent=comp.length+' / '+p.items.length;
+  var list=document.getElementById('eco-list');list.innerHTML='';
+  disp.forEach(function(d){
+    var strong=d.val>=ECO_THR;var row=document.createElement('div');row.className='eco-row';
+    row.innerHTML='<span class="eco-type '+ecoTypeCls(d.type)+'">'+d.type+'</span>'+
+      '<span class="eco-ename">'+d.name+'</span>'+
+      '<div class="eco-bwrap"><div class="eco-bfill '+(strong?'strong':'weak')+'" style="width:'+d.val+'%"></div><div class="eco-ref"></div><div class="eco-ztag">TOP 1/3</div></div>'+
+      '<span class="eco-score '+(strong?'strong':'weak')+'">'+d.val+'</span>'+
+      '<span class="eco-star">'+(strong?'★':'')+'</span>';
+    list.appendChild(row);
+  });
+}
+Object.keys(ECOSYSTEM).forEach(function(key){
+  var p=ECOSYSTEM[key];var comp=p.items.filter(function(d){return d.val>=ECO_THR;}).length;
+  var tab=document.createElement('button');tab.className='eco-tab'+(key===ecoTab?' active':'');
+  tab.innerHTML=key+' <span class="eco-tab-sc">('+comp+'/'+p.items.length+')</span>';
+  tab.addEventListener('click',function(){document.querySelectorAll('.eco-tab').forEach(function(t){t.classList.remove('active');});tab.classList.add('active');ecoTab=key;renderEco();});
+  document.getElementById('eco-tabs').appendChild(tab);
+});
+document.getElementById('eco-tog').addEventListener('click',function(){ecoComp=!ecoComp;this.classList.toggle('on',ecoComp);renderEco();});
+renderEco();
+
+/* ══ S9: STAKEHOLDER DIR ══ */
+var PILLARS6=[
+  {id:1,name:'Workforce & Training',short:'Workforce',color:'#006e82'},
+  {id:2,name:'Research & Innovation',short:'Research',color:'#3a9e50'},
+  {id:3,name:'Infrastructure & Site Dev.',short:'Infrastructure',color:'#1896ae'},
+  {id:4,name:'Supply Chain Support',short:'Supply Chain',color:'#d96c20'},
+  {id:5,name:"Trade & Int'l Investment",short:'Trade',color:'#6e4bb5'},
+  {id:6,name:'Operational Improvement & Capital',short:'Capital',color:'#b58c10'},
+];
+var SNODES=[
+  {id:1,name:'Mountwest Community & Technical College',type:'Community College',pillar:1,loc:'Cabell County'},
+  {id:2,name:'Marshall Advanced Manufacturing Center',type:'Advanced Mfg. Training Center',pillar:1,loc:'Cabell County'},
+  {id:3,name:'SMART Program (MAMC + Mountwest)',type:'Apprenticeship Program',pillar:1,loc:'Cabell County'},
+  {id:4,name:'WV Building & Construction Trades Council',type:'Trade Apprenticeship',pillar:1,loc:'Cabell County'},
+  {id:5,name:'Region II Workforce Development Board',type:'Workforce Board',pillar:1,loc:'SW WV Region'},
+  {id:6,name:'Ashland Community & Technical College',type:'Community College',pillar:1,loc:'Boyd Co., KY'},
+  {id:7,name:'Marshall University',type:'Research University (EPSCoR)',pillar:2,loc:'Cabell County'},
+  {id:8,name:'Marshall University Research Corporation',type:'EDA University Center',pillar:2,loc:'Cabell County'},
+  {id:9,name:'Marshall iCenter + Brad D. Smith Incubator',type:'Incubator / Accelerator',pillar:2,loc:'Cabell County'},
+  {id:10,name:'Port of Huntington Tri-State',type:'Inland Port (2nd largest in US)',pillar:3,loc:'Cabell / Wayne Co.'},
+  {id:11,name:'Huntington Tri-State Airport (HTS)',type:'Commercial Airport',pillar:3,loc:'Cabell County'},
+  {id:12,name:'KineticPark',type:'Technology & Industrial Park',pillar:3,loc:'Cabell County'},
+  {id:13,name:'Huntington Municipal Development Authority',type:'Development Authority',pillar:3,loc:'Cabell County'},
+  {id:14,name:'CSX Transportation',type:'Class I Rail (Huntington Div. HQ)',pillar:3,loc:'Cabell County'},
+  {id:15,name:'KYOVA Metropolitan Planning Organization',type:'Regional Transportation Planning',pillar:3,loc:'Tri-State Region'},
+  {id:16,name:'Appalachian Power (AEP)',type:'Electric Utility',pillar:3,loc:'Regional'},
+  {id:17,name:'Special Metals / Huntington Alloys (PCC)',type:'Anchor Manufacturer (Nickel Alloys)',pillar:4,loc:'Cabell County'},
+  {id:18,name:'Steel of West Virginia',type:'Anchor Manufacturer (Steel)',pillar:4,loc:'Cabell County'},
+  {id:19,name:'Alcon Research Ltd.',type:'Manufacturer (Medical Devices)',pillar:4,loc:'Cabell County'},
+  {id:20,name:'Huntington Steel & Supply Co.',type:'Metal Distributor',pillar:4,loc:'Cabell County'},
+  {id:21,name:'WV Manufacturing Extension Partnership',type:'NIST MEP Affiliate',pillar:4,loc:'Statewide'},
+  {id:22,name:'Huntington Area Development Council',type:'Economic Development Org.',pillar:4,loc:'Cabell / Wayne Co.'},
+  {id:23,name:'Huntington Regional Chamber of Commerce',type:'Business Association',pillar:4,loc:'Cabell County'},
+  {id:24,name:'WV Manufacturers Association',type:'Statewide Trade Association',pillar:4,loc:'Statewide'},
+  {id:25,name:'WV Division of Economic Development',type:"State Agency (Int'l Trade Offices)",pillar:5,loc:'Statewide'},
+  {id:26,name:'J.H. Fletcher & Co.',type:'Exporting Manufacturer',pillar:5,loc:'Cabell County'},
+  {id:27,name:'Huntington Drum Co.',type:'Exporting Manufacturer',pillar:5,loc:'Cabell County'},
+  {id:28,name:'US Commercial Service — WV',type:'Federal Export Assistance',pillar:5,loc:'Statewide'},
+  {id:29,name:'WV Jobs Investment Trust',type:'Public Venture Capital Fund',pillar:6,loc:'Statewide'},
+  {id:30,name:'WV Capital Access Program (WVCAP)',type:'State Loan Participation Program',pillar:6,loc:'Statewide'},
+  {id:31,name:'Partner Community Capital',type:'Community Development Finance Inst.',pillar:6,loc:'Regional'},
+  {id:32,name:'Appalachian Regional Commission (ARC)',type:'Federal Grant Agency',pillar:6,loc:'Regional'},
+  {id:33,name:'WV Small Business Development Center',type:'Technical Assistance (SBA Affiliate)',pillar:6,loc:'Statewide'},
+];
+(function(){
+  var grid=document.getElementById('dir-grid');
+  PILLARS6.forEach(function(p){
+    var nodes=SNODES.filter(function(n){return n.pillar===p.id;});
+    var panel=document.createElement('div');panel.className='dir-panel';
+    var items=nodes.map(function(n){
+      return '<div class="dir-item"><div class="dir-dot" style="background:'+p.color+'40;border:1.5px solid '+p.color+'"></div>'+
+        '<div class="dir-txt"><div class="dir-name">'+n.name+'</div><div class="dir-type">'+n.type+'</div><div class="dir-loc">'+n.loc+'</div></div></div>';
+    }).join('');
+    panel.innerHTML='<div class="dir-ph" style="background:'+p.color+'"><span class="dir-pnum">'+p.id+'</span><span class="dir-pname">'+p.name+'</span></div><div class="dir-body">'+items+'</div>';
+    grid.appendChild(panel);
+  });
+})();
+
+/* ══ S10: D3 NETWORK (bigger nodes) ══ */
+var SLINKS=[[2,1],[3,1],[3,2],[5,1],[5,2],[6,1],[5,6],[2,7],[2,8],[7,8],[7,9],[1,17],[1,18],[2,17],[2,21],[5,22],[2,32],[9,22],[9,29],[9,33],[8,32],[10,14],[10,15],[12,13],[12,16],[13,15],[11,15],[10,17],[10,18],[12,22],[10,32],[13,32],[17,18],[17,20],[18,20],[22,23],[21,23],[21,24],[17,25],[26,25],[27,25],[26,28],[27,28],[22,32],[22,30],[23,33],[21,33],[25,29],[29,30],[30,31]];
+var netBuilt=false,netVis=null;
+var pillarColors={};PILLARS6.forEach(function(p){pillarColors[p.id]=p.color;});
+var netFilters={};PILLARS6.forEach(function(p){netFilters[p.id]=true;});
+(function(){
+  var ctrls=document.getElementById('net-ctrls'),leg=document.getElementById('net-leg');
+  PILLARS6.forEach(function(p){
+    var btn=document.createElement('button');btn.className='npfbtn';
+    btn.textContent=p.short;btn.style.borderColor=p.color;btn.style.color='#fff';btn.style.background=p.color;
+    btn.addEventListener('click',function(){
+      if(netFilters[p.id]){netFilters[p.id]=false;btn.style.background='transparent';btn.style.color=p.color;}
+      else{netFilters[p.id]=true;btn.style.background=p.color;btn.style.color='#fff';}
+      if(netVis)netVis();
+    });
+    ctrls.appendChild(btn);
+    var li=document.createElement('div');li.className='nleg-item';
+    li.innerHTML='<div class="nleg-dot" style="background:'+p.color+'"></div><span>'+p.name+'</span>';
+    leg.appendChild(li);
+  });
+})();
+var NLABELS=['MCTC','MAMC','SMART\nPrgm','WV Bldg\nTrades','Reg II\nWFB','Ashland\nCTC','Marshall\nUniv.','MU Res.\nCorp.','iCenter','Port of\nHtn.','HTS\nAirport','Kinetic\nPark','HMDA','CSX','KYOVA\nMPO','AEP','Special\nMetals','Steel\nof WV','Alcon','Htn Steel\n& Sup','WVMEP','HADCO','Htn\nChamber','WV Mfg\nAssoc.','WV Econ\nDev.','J.H.\nFletcher','Htn\nDrum Co.','US Comm.\nSvc.','WV JIT','WVCAP','Partner\nCap.','ARC','WV\nSBDC'];
+function buildNetwork(){
+  netBuilt=true;
+  var wrap=document.getElementById('net-wrap'),W=wrap.clientWidth||820,H=wrap.clientHeight||340;
+  var deg={};SLINKS.forEach(function(l){deg[l[0]]=(deg[l[0]]||0)+1;deg[l[1]]=(deg[l[1]]||0)+1;});
+  var maxD=Math.max.apply(null,Object.values(deg));
+  /* larger nodes: 18–34px radius */
+  function nr(d){return 18+Math.round(((deg[d.id]||0)/maxD)*16);}
+  var fN=SNODES.map(function(n){return Object.assign({},n);});
+  var fL=SLINKS.map(function(l){return{source:l[0],target:l[1]};});
+  var nMap={};fN.forEach(function(n){nMap[n.id]=n;});
+  var svg=d3.select('#net-svg').attr('viewBox','0 0 '+W+' '+H);
+  var g=svg.append('g');
+  svg.call(d3.zoom().scaleExtent([0.25,4]).on('zoom',function(e){g.attr('transform',e.transform);}));
+  var sim=d3.forceSimulation(fN)
+    .force('link',d3.forceLink(fL).id(function(d){return d.id;}).distance(85).strength(0.4))
+    .force('charge',d3.forceManyBody().strength(-280))
+    .force('center',d3.forceCenter(W/2,H/2))
+    .force('collide',d3.forceCollide(function(d){return nr(d)+6;}));
+  var lSel=g.append('g').selectAll('line').data(fL).join('line').attr('stroke','#c0d4de').attr('stroke-width',1.5).attr('stroke-opacity',0.55);
+  var nG=g.append('g').selectAll('g').data(fN).join('g').style('cursor','pointer')
+    .call(d3.drag()
+      .on('start',function(e,d){if(!e.active)sim.alphaTarget(0.25).restart();d.fx=d.x;d.fy=d.y;})
+      .on('drag',function(e,d){d.fx=e.x;d.fy=e.y;})
+      .on('end',function(e,d){if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null;}))
+    .on('mouseover',function(event,d){
+      var p=PILLARS6.filter(function(p){return p.id===d.pillar;})[0];
+      var tt=document.getElementById('net-tip');
+      tt.innerHTML='<div class="ntt-name">'+d.name+'</div><div class="ntt-type">'+d.type+'</div><div class="ntt-loc">'+d.loc+'</div><span class="ntt-pill" style="background:'+p.color+'">'+p.name+'</span>';
+      tt.style.opacity=1;
+    })
+    .on('mousemove',function(event){
+      var r=wrap.getBoundingClientRect(),bw=wrap.clientWidth;
+      var x=event.clientX-r.left+14,y=event.clientY-r.top-32;
+      if(x+215>bw)x=event.clientX-r.left-220;if(y<0)y=event.clientY-r.top+12;
+      var tt=document.getElementById('net-tip');tt.style.left=x+'px';tt.style.top=y+'px';
+    })
+    .on('mouseout',function(){document.getElementById('net-tip').style.opacity=0;})
+    .on('click',function(e,d){hlN(d);});
+  nG.append('circle').attr('r',nr).attr('fill',function(d){return pillarColors[d.pillar];}).attr('fill-opacity',0.88).attr('stroke','#fff').attr('stroke-width',2);
+  nG.each(function(d){
+    var el=d3.select(this),r=nr(d),
+      parts=(NLABELS[d.id-1]||d.name.substring(0,9)).split('\n'),
+      fs=r>28?9:r>22?8.5:8,lh=fs*1.25;
+    parts.forEach(function(line,i){
+      el.append('text').attr('text-anchor','middle')
+        .attr('dy',(i-(parts.length-1)/2)*lh+'px')
+        .attr('font-size',fs).attr('fill','#fff').attr('font-weight','700')
+        .attr('pointer-events','none').text(line);
+    });
+  });
+  sim.on('tick',function(){
+    lSel.attr('x1',function(d){return d.source.x;}).attr('y1',function(d){return d.source.y;}).attr('x2',function(d){return d.target.x;}).attr('y2',function(d){return d.target.y;});
+    nG.attr('transform',function(d){return'translate('+d.x+','+d.y+')';});
+  });
+  var hiId=null;
+  function hlN(d){
+    if(hiId===d.id){hiId=null;lSel.attr('stroke','#c0d4de').attr('stroke-opacity',0.55).attr('stroke-width',1.5);nG.select('circle').attr('fill-opacity',0.88).attr('stroke-width',2);return;}
+    hiId=d.id;var ci={};ci[d.id]=true;
+    lSel.each(function(l){var s=l.source.id!==undefined?l.source.id:l.source,t=l.target.id!==undefined?l.target.id:l.target;if(s===d.id)ci[t]=true;if(t===d.id)ci[s]=true;});
+    var pc=pillarColors[d.pillar];
+    lSel.attr('stroke',function(l){var s=l.source.id!==undefined?l.source.id:l.source,t=l.target.id!==undefined?l.target.id:l.target;return(s===d.id||t===d.id)?pc:'#dde8ee';})
+        .attr('stroke-opacity',function(l){var s=l.source.id!==undefined?l.source.id:l.source,t=l.target.id!==undefined?l.target.id:l.target;return(s===d.id||t===d.id)?0.92:0.12;})
+        .attr('stroke-width',function(l){var s=l.source.id!==undefined?l.source.id:l.source,t=l.target.id!==undefined?l.target.id:l.target;return(s===d.id||t===d.id)?3:1;});
+    nG.select('circle').attr('fill-opacity',function(n){return ci[n.id]?0.95:0.12;}).attr('stroke-width',function(n){return n.id===d.id?3.5:2;});
+  }
+  netVis=function(){
+    nG.attr('display',function(d){return netFilters[d.pillar]?null:'none';});
+    lSel.attr('display',function(l){var sn=l.source.pillar!==undefined?l.source:nMap[l.source],tn=l.target.pillar!==undefined?l.target:nMap[l.target];return(sn&&netFilters[sn.pillar])&&(tn&&netFilters[tn.pillar])?null:'none';});
+  };
+}
+
+/* ══ S11: QR ══ */
+new QRCode(document.getElementById('qr-code'),{text:'https://tinyurl.com/cabell-county-wv',width:200,height:200,colorDark:'#006e82',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+</script>
+</body>
+</html>
